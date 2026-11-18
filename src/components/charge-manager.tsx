@@ -26,6 +26,7 @@ const decimal = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 2 });
 const date = new Intl.DateTimeFormat("pt-BR", {
   dateStyle: "medium",
   timeStyle: "short",
+  timeZone: "America/Fortaleza",
 });
 
 export function ChargeManager() {

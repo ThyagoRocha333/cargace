@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   averageCostPerKwh,
+  chargesForPeriod,
   costPerKm,
   fuelComparison,
+  fortalezaMonthKey,
+  monthlyTotals,
   type ChargeForCalculation,
 } from "../src/lib/finance";
 
@@ -50,5 +53,66 @@ describe("cálculos financeiros auditáveis", () => {
     expect(
       fuelComparison([{ ...charges[1], distance_km: null }], 7, 14),
     ).toBeNull();
+  });
+
+  it("agrupa recargas usando o mês de Fortaleza, inclusive na virada UTC", () => {
+    expect(fortalezaMonthKey("2026-03-01T02:59:59Z")).toBe("2026-02");
+    expect(fortalezaMonthKey("2026-03-01T03:00:00Z")).toBe("2026-03");
+    expect(fortalezaMonthKey("data inválida")).toBeNull();
+
+    const grouped = monthlyTotals(
+      [
+        { ...charges[0], charged_at: "2026-03-01T02:59:59Z" },
+        { ...charges[1], charged_at: "2026-03-01T03:00:00Z" },
+      ],
+      "all",
+      new Date("2026-03-01T03:00:01Z"),
+    );
+    expect(grouped.find(({ key }) => key === "2026-02")?.cost).toBe(20);
+    expect(grouped.find(({ key }) => key === "2026-03")?.cost).toBe(15);
+  });
+
+  it("aplica o período selecionado aos gráficos e inclui todo o histórico", () => {
+    const history: ChargeForCalculation[] = [
+      { ...charges[0], charged_at: "2024-12-15T12:00:00Z" },
+      { ...charges[1], charged_at: "2025-04-15T12:00:00Z" },
+      { ...charges[2], charged_at: "2026-03-01T03:00:00Z" },
+    ];
+    const now = new Date("2026-03-15T12:00:00Z");
+
+    expect(monthlyTotals(history, "month", now).map(({ key }) => key)).toEqual([
+      "2026-03",
+    ]);
+    const year = monthlyTotals(history, "year", now);
+    expect(year).toHaveLength(12);
+    expect(year[0].key).toBe("2025-04");
+    expect(year.at(-1)?.key).toBe("2026-03");
+    expect(year.at(-1)).toMatchObject({ cost: 10, energy: 10 });
+
+    const all = monthlyTotals(history, "all", now);
+    expect(all[0].key).toBe("2024-12");
+    expect(all.at(-1)?.key).toBe("2026-03");
+    expect(chargesForPeriod(history, "month", now)).toHaveLength(1);
+    expect(chargesForPeriod(history, "year", now)).toHaveLength(2);
+    expect(chargesForPeriod(history, "all", now)).toHaveLength(3);
+  });
+
+  it("ignora valores ausentes ou não finitos nos cálculos", () => {
+    const invalid = [
+      {
+        ...charges[0],
+        energy_kwh: Number.NaN,
+        distance_km: Number.NaN,
+      },
+      { ...charges[1], total_cost_brl: Number.POSITIVE_INFINITY },
+      {
+        ...charges[2],
+        energy_kwh: Number.NaN,
+        distance_km: Number.NaN,
+      },
+    ];
+    expect(averageCostPerKwh(invalid)).toBeNull();
+    expect(costPerKm(invalid)).toBeNull();
+    expect(fuelComparison(charges, Number.NaN, 14)).toBeNull();
   });
 });

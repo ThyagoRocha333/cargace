@@ -44,7 +44,7 @@ O acesso ao banco ocorre com a chave pública Supabase e sessão do usuário; as
 ## Instalação local
 
 ```bash
-git clone <URL-DO-REPOSITORIO>
+git clone https://github.com/ThyagoRocha333/cargace.git
 cd cargace
 npm ci
 cp .env.example .env.local
@@ -80,6 +80,10 @@ npm run build
 ```
 
 Abra `http://localhost:3000`. Sem credenciais Supabase, telas privadas e persistência não estarão disponíveis; sem a chave OCM, o mapa informa explicitamente a indisponibilidade da integração.
+
+## Screenshots
+
+As capturas de tela reais ainda não foram registradas neste repositório. Esta seção será atualizada com imagens da aplicação executando em desktop e dispositivos móveis após a validação visual.
 
 ## Open Charge Map e atribuição
 

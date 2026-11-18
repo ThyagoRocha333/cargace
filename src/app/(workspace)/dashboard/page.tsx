@@ -11,8 +11,10 @@ import { DashboardCharts } from "@/components/dashboard-charts";
 import {
   averageCostPerKwh,
   costPerKm,
+  chargesForPeriod,
   fuelComparison,
   monthlyTotals,
+  type DashboardPeriod,
   type ChargeForCalculation,
 } from "@/lib/finance";
 import { createClient } from "@/lib/supabase/server";
@@ -32,16 +34,8 @@ const dateFormat = new Intl.DateTimeFormat("pt-BR", {
   day: "2-digit",
   month: "short",
   year: "numeric",
+  timeZone: "America/Fortaleza",
 });
-
-function periodStart(period: string) {
-  const date = new Date();
-  if (period === "year") date.setMonth(date.getMonth() - 11, 1);
-  else if (period === "all") return null;
-  else date.setDate(1);
-  date.setHours(0, 0, 0, 0);
-  return date.toISOString();
-}
 
 export default async function DashboardPage({
   searchParams,
@@ -49,11 +43,11 @@ export default async function DashboardPage({
   searchParams: Promise<{ period?: string }>;
 }) {
   const { period: requestedPeriod } = await searchParams;
-  const period = ["month", "year", "all"].includes(requestedPeriod ?? "")
-    ? requestedPeriod!
-    : "month";
+  const period: DashboardPeriod =
+    requestedPeriod === "year" || requestedPeriod === "all"
+      ? requestedPeriod
+      : "month";
   const supabase = await createClient();
-  const start = periodStart(period);
   const [chargesResult, settingsResult] = await Promise.all([
     fetchAllCharges(supabase),
     supabase
@@ -76,9 +70,7 @@ export default async function DashboardPage({
     total_cost_brl: Number(row.total_cost_brl),
     distance_km: row.distance_km === null ? null : Number(row.distance_km),
   })) as RawCharge[];
-  const charges = start
-    ? allCharges.filter((charge) => charge.charged_at >= start)
-    : allCharges;
+  const charges = chargesForPeriod(allCharges, period);
   const spend = charges.length
     ? charges.reduce((sum, item) => sum + item.total_cost_brl, 0)
     : null;
@@ -97,7 +89,10 @@ export default async function DashboardPage({
       ? null
       : Number(settings.gasoline_efficiency_km_liter),
   );
-  const chartData = monthlyTotals(allCharges as ChargeForCalculation[]);
+  const chartData = monthlyTotals(
+    allCharges as ChargeForCalculation[],
+    period,
+  );
   const recent = charges.slice(0, 5);
   const periodLabel =
     period === "month"
@@ -189,7 +184,14 @@ export default async function DashboardPage({
           <div className="panel-heading">
             <div>
               <h2>Gastos com recargas</h2>
-              <p>Valores registrados por mês (BRL)</p>
+              <p>
+                Valores registrados por mês (BRL) ·{" "}
+                {period === "month"
+                  ? "mês atual"
+                  : period === "year"
+                    ? "últimos 12 meses"
+                    : "histórico completo"}
+              </p>
             </div>
             <CircleDollarSign size={16} color="#16a34a" />
           </div>
@@ -199,7 +201,14 @@ export default async function DashboardPage({
           <div className="panel-heading">
             <div>
               <h2>Consumo de energia</h2>
-              <p>Energia registrada por mês (kWh)</p>
+              <p>
+                Energia registrada por mês (kWh) ·{" "}
+                {period === "month"
+                  ? "mês atual"
+                  : period === "year"
+                    ? "últimos 12 meses"
+                    : "histórico completo"}
+              </p>
             </div>
             <Zap size={16} color="#3b82f6" />
           </div>

@@ -9,8 +9,8 @@
 - Estimativa gasolina = distância comparável ÷ km/l de referência × preço BRL/litro.
 - Economia estimada = custo estimado gasolina − custo elétrico associado às mesmas recargas/distâncias.
 - Sem distância, preço ou eficiência válida, a comparação não é calculada.
-- Custos de eletricidade e estimativa de combustível consideram o período selecionado no dashboard. O gráfico apresenta a série mensal.
-- Data/hora é armazenada como `timestamptz`, normalizada pelo cliente para UTC; a apresentação usa locale `pt-BR`.
+- Custos de eletricidade, estimativa de combustível e gráficos consideram o período selecionado no dashboard. O histórico completo abrange as recargas desde o primeiro mês registrado.
+- Data/hora é armazenada como `timestamptz`, normalizada pelo cliente para UTC. Os períodos mensais, gráficos e datas do histórico usam `America/Fortaleza`; a apresentação usa locale `pt-BR`.
 
 ## Dados externos
 
